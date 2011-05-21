@@ -1,0 +1,36 @@
+canvas {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  z-index: -1;
+}
+
+#warning {
+  font-family: sans-serif;
+  font-weight: bold;
+  color: #f00;
+}
+
+#information {
+  font-weight: bold;
+}
+
+#information span {
+  font-weight: normal;
+}
+
+#text .focus {
+  font-weight: bold;
+  color: #800;
+  background-color: #aaf;
+}
+
+#information #time_left {
+  font-family: sans-serif;
+  font-weight: 900;
+  color: #f00;
+}
+
+textarea {
+  background-color: transparent;
+}
