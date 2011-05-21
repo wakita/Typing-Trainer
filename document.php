@@ -17,7 +17,7 @@ function skip_text($fp) {
 function skip_blank_lines($fp) {
     $pos = ftell($fp);
     for ($line = fgets($fp);
-         preg_match('/^[[:blank:]]*$/', $line);
+         preg_match('/^[[:space:]]*$/', $line);
          $pos = ftell($fp), $line = fgets($fp)) { }
     fseek($fp, $pos);
 }
@@ -46,10 +46,11 @@ function read_document($fp, $begin, $minsize) {
     $n_chars = 0;
     $text = array();
     for ($line = fgets($fp); $n_chars < $minsize; $line = fgets($fp)) {
+        $line = preg_replace('/[\r\n]+/', '', $line);
         $n_chars += strlen(preg_replace('/[^[:print:]]/', '', $line));
         array_push($text, $line);
     }
-    $text = implode('', $text);
+    $text = implode("\n", $text);
     $text = str_replace("\r", '', $text);
     $text = preg_replace("/^\n\n+/", "", $text);
     $text = preg_replace("/\n\n+/", "\n\n", $text);
