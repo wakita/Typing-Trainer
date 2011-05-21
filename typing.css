@@ -2,20 +2,30 @@ canvas {
   position: fixed;
   top: 0px;
   left: 0px;
-  z-index: -2;
+  z-index: -100;
 }
 
-#status-window {
+.panel {
   position: fixed;
-  top: 2px;
   right: 2px;
   padding: 7px;
-  z-index: -1;
   border-style: groove;
   border-width: thin;
+  opacity: 0.7;
+}
+
+#status-panel {
+  top: 2px;
+  z-index: -2;
   border-color: #eff;
   background-color: #eff;
-  opacity: 0.7;
+}
+
+#control-panel {
+  /* bottom: 2px; */
+  z-index: -1;
+  border-color: #eff;
+  background-color: #eff;
 }
 
 #warning {

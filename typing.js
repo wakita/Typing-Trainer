@@ -5,7 +5,7 @@
 var version_info = 'Version 0.02 (May 21, 2011)';
 var debug = true;
 
-var g_context, $status_window, $login_name;
+var g_context, $status_panel, $login_name, $control_panel;
 var $text_area, $warning_area, $input_area, $debug_area;
 
 var frame;
@@ -24,7 +24,7 @@ var status_info = {
 };
 
 function show_status() {
-  $status = $('#status-window');
+  $status = $('#status-panel');
   var put = function (title, content) {
     $p = $('<p>').append($('<strong>').text(title));
     if (typeof content !== 'undefined') $p.append(': ' + content);
@@ -173,6 +173,16 @@ function input_onkeyup(e) {
 
 // }}}
 
+// {{{ コントロールパネル
+
+$(function () {
+    $control_panel = $('<div>').attr({ id: 'control-panel', 'class': 'panel' })
+    .html($('<strong>').text('Control panel'))
+    .appendTo($(document.body));
+})
+
+// }}}
+
 // {{{ 初期化
 
 $(function () {
@@ -191,9 +201,9 @@ $(function () {
 
     g_context = c.getContext('2d');
 
-    // Status window
+    // Status panel
 
-    $status_window = $('<div>').attr({ id: 'status-window' })
+    $status_panel = $('<div>').attr({ id: 'status-panel', 'class': 'panel' })
     .appendTo($body);
 
     // Contents
