@@ -2,42 +2,66 @@
 
 var debug = true;
 
-var g_context, $login_name, $text, $warning, $input, $log;
+var g_context, $status_window, $login_name;
+var $text_area, $warning_area, $input_area, $debug_area;
 
 var frame;
 
-var newline_rex = new RegExp(/\n/gm);
-var newlines_rex = new RegExp(/\n+/gm);
-var non_alpha_rex = new RegExp(/[^a-z]+/gim);
-var non_numel_rex = new RegExp(/[^0-9]+/gm);
-var symbol_rex = new RegExp(/[a-z0-9 \t\n]+/gim);
+var status_info = {
+  login_name: 'ななしのごんべい',
+  text_alphas: '',
+  text_numbers: '',
+  text_symbols: ''
+};
+
+function show_status() {
+  $status = $('#status-window');
+  var put = function (title, content) {
+    $p = $('<p>').append($('<strong>').text(title));
+    if (typeof content !== 'undefined') $p.append(': ' + content);
+    $status.append($p);
+  };
+  put('Information');
+  put('Name', status_info.login_name);
+  put('アルファベット', status_info.text_alphas);
+  put('数字', status_info.text_numbers);
+  put('記号', status_info.text_symbols);
+}
 
 var readText = function () {
+  var newline_rex = new RegExp(/\n/gm);
+  var newlines_rex = new RegExp(/\n+/gm);
+  var non_alpha_rex = new RegExp(/[^a-z]+/gim);
+  var non_numel_rex = new RegExp(/[^0-9]+/gm);
+  var non_symbol_rex = new RegExp(/[a-z0-9 \t\n]+/gim);
+
   $.post(
     'document.php',
     { command: [ 'choose_text', 'docs/pg76.txt', 500 ] },
     function (text) {
       var texts = text.split('\n');
       for (var i = 0; i < texts.length; i++) {
-        $text.append($('<span>').attr({ id: 'line_' + (i+1) }).html(texts[i] + '<br>'));
+        $text_area.append($('<span>').attr({ id: 'line_' + (i+1) }).html(texts[i] + '<br>'));
       }
 
-      $('#n_alpha').text(text.replace(non_alpha_rex, '').length);
-      $('#n_numeric').text(text.replace(non_numel_rex, '').length);
-      $('#n_symbol').text(text.replace(symbol_rex, '').length);
+      status_info.text_alphas = text.replace(non_alpha_rex, '').length;
+      status_info.text_numbers = text.replace(non_numel_rex, '').length;
+      status_info.text_symbols = text.replace(non_symbol_rex, '').length;
+
+      show_status();
     });
 };
 
 var n_cheat = 0;
 
 var punish = function () {
-  $warning.html($('<p>').text('ずるはいかんぜよ'));
+  $warning_area.html($('<p>').text('ずるはいかんぜよ'));
   n_cheat++;
   var c = new Number(Math.min(n_cheat * 3, 15)).toString(16);
-  $text.css({
+  $text_area.css({
       color: '#' + c + c + c,
       'font-size': '' + Math.max(100 - 10 * n_cheat, 10) + '%' });
-  $warning.css({
+  $warning_area.css({
       'font-size': '' + Math.max(100 + 70 * n_cheat, 10) + '%' });
   return false;
 };
@@ -97,8 +121,8 @@ function input_onkeyup(e) {
   var c = e.keyCode;
   if (c == 13 || 37 <= c && c <= 40) {
     var last_line = cur_line;
-    var cur_pos = $input[0].selectionStart;
-    var input = $input.val();
+    var cur_pos = $input_area[0].selectionStart;
+    var input = $input_area.val();
     var n_lines = lines_upto(input, input.length) + 1;
     cur_line = lines_upto(input, cur_pos) + 1;
 
@@ -106,7 +130,7 @@ function input_onkeyup(e) {
     $('#line_' + cur_line).attr('class', 'focus');
 
     if (debug) {
-      $log.text('Key code: ' + e.keyCode +
+      $debug_area.text('Key code: ' + e.keyCode +
           ', Pos : ' + cur_pos +
           ', Lines: ' + cur_line + '/' + n_lines);
     }
@@ -115,9 +139,9 @@ function input_onkeyup(e) {
 
 $(function () {
     var $body = $(document.body);
-    [ 'copy', 'paste', /*'contextmenu'*/ ].forEach (function (event) {
-        $body.bind(event, punish) });
+    $login_name = $('#login_name');
 
+    // Canvas
     var $canvas =
       $('<canvas>').attr({
           width: document.width,
@@ -127,24 +151,34 @@ $(function () {
 
     g_context = c.getContext('2d');
 
-    $login_name = $('#login_name');
+    // Status window
 
-    $text = $('<blockquote>').attr('id', 'text').appendTo($body);
+    $status_window = $('<div>').attr({ id: 'status-window' })
+    .appendTo($body);
 
-    $warning = $('<div>').appendTo($body);
+    // Contents
+    $contents = $('#contents-come-here');
 
-    $body.append($('<p>').text('この文章を以下に入力して下さい．'));
+    $text_area = $('<blockquote>').attr('id', 'text').appendTo($contents);
+    $text_area.bind('copy', punish);
+    $text_area.bind('contextmenu', punish);
 
-    $input =
+    $warning_area = $('<div>').appendTo($contents);
+
+    $contents.append($('<p>').text('この文章を以下に入力して下さい．'));
+
+    $input_area =
       $('<textarea>').attr({ id: 'input', cols: 80, rows: 20 })
     .bind('keyup', input_onkeyup);
-    $('<div>').append($input).appendTo($body)
+    $('<div>').append($input_area).appendTo($contents)
+    $input_area.bind('paste', punish);
+    $input_area.bind('contextmenu', punish);
+    $input_area.bind('click', function () { start_timer(1 * 60 * 1000); });
 
     if (debug) {
       $body.append($('<hr>')).append($('<p>').append($('<strong>').text('Debug mode')));
-      $log = $('<div>').attr('id', 'log').appendTo($body);
+      $debug_area = $('<div>').attr('id', 'debug').appendTo($body);
     }
 
     readText();
-    start_timer(1 * 60 * 1000);
   });

@@ -2,17 +2,22 @@ canvas {
   position: fixed;
   top: 0px;
   left: 0px;
+  z-index: -100;
+}
+
+#status-window {
+  position: fixed;
+  top: 2px;
+  right: 2px;
   z-index: -1;
+  border-style: groove;
+  border-width: thin;
 }
 
 #warning {
   font-family: sans-serif;
   font-weight: bold;
   color: #f00;
-}
-
-#information {
-  font-weight: bold;
 }
 
 #information span {
@@ -29,6 +34,10 @@ canvas {
   font-family: sans-serif;
   font-weight: 900;
   color: #f00;
+}
+
+#about-this-project {
+  text-align: right;
 }
 
 textarea {
