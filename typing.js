@@ -1,5 +1,6 @@
 // 京
 
+var version_info = 'Version 0.02 (May 21, 2011)';
 var debug = true;
 
 var g_context, $status_window, $login_name;
@@ -138,6 +139,8 @@ function input_onkeyup(e) {
 }
 
 $(function () {
+    $('#version-number').text(version_info);
+
     var $body = $(document.body);
     $login_name = $('#login_name');
 
