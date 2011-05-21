@@ -116,18 +116,19 @@ function lines_upto(text, end) {
   return l;
 }
 
-var cur_line = 1;
+var cur_line = undefined;
 
 function input_onkeyup(e) {
   var c = e.keyCode;
-  if (c == 13 || 37 <= c && c <= 40) {
+  if (!cur_line || c == 8 || c == 13 || 37 <= c && c <= 40) {
     var last_line = cur_line;
     var cur_pos = $input_area[0].selectionStart;
     var input = $input_area.val();
     var n_lines = lines_upto(input, input.length) + 1;
     cur_line = lines_upto(input, cur_pos) + 1;
 
-    $('#line_' + last_line).attr('class', 'unfocus');
+    if (last_line)
+      $('#line_' + last_line).attr('class', 'unfocus');
     $('#line_' + cur_line).attr('class', 'focus');
 
     if (debug) {
