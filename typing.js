@@ -1,5 +1,7 @@
 // 京
 
+// {{{ 変数宣言
+
 var version_info = 'Version 0.02 (May 21, 2011)';
 var debug = true;
 
@@ -8,11 +10,17 @@ var $text_area, $warning_area, $input_area, $debug_area;
 
 var frame;
 
+// }}}
+
+// {{{ 情報ウィンドウの内容
+
 var status_info = {
   login_name: 'ななしのごんべい',
+  text_letters: '',
   text_alphas: '',
   text_numbers: '',
-  text_symbols: ''
+  text_symbols: '',
+  seconds_to_go: ''
 };
 
 function show_status() {
@@ -24,10 +32,17 @@ function show_status() {
   };
   put('Information');
   put('Name', status_info.login_name);
+  put('総文字数', status_info.text_letters)
   put('アルファベット', status_info.text_alphas);
   put('数字', status_info.text_numbers);
   put('記号', status_info.text_symbols);
+  var t = status_info.seconds_to_go;
+  put('標準時間', '' + Math.floor(t / 60) + '分' + (t % 60) + '秒');
 }
+
+// }}}
+
+// {{{ テキストの読み込みと内容の分析
 
 var readText = function () {
   var newline_rex = new RegExp(/\n/gm);
@@ -45,13 +60,19 @@ var readText = function () {
         $text_area.append($('<span>').attr({ id: 'line_' + (i+1) }).html(texts[i] + '<br>'));
       }
 
+      status_info.text_letters = text.length;
       status_info.text_alphas = text.replace(non_alpha_rex, '').length;
       status_info.text_numbers = text.replace(non_numel_rex, '').length;
       status_info.text_symbols = text.replace(non_symbol_rex, '').length;
+      status_info.seconds_to_go = Math.floor(60 * (text.length / 250));
 
       show_status();
     });
 };
+
+// }}}
+
+// {{{ ずるした人へのお仕置き
 
 var n_cheat = 0;
 
@@ -66,6 +87,10 @@ var punish = function () {
       'font-size': '' + Math.max(100 + 70 * n_cheat, 10) + '%' });
   return false;
 };
+
+// }}}
+
+// {{{ 経過時間の描画
 
 function arc_percent(start, end, radius, width, style) {
   var g = g_context;
@@ -90,21 +115,26 @@ function arc_time_passed(t) {
   if (t > 0.8) arc_percent(0.8, t, r, w, '#fcc');
 }
 
-function start_timer(max_ms) {
+function start_timer(deadline) {
+  var deadline_ms = deadline * 1000;
   var info = time_pass_visual_information;
   info.r = Math.min(frame.w, frame.h) / 2 - 30;
 
   var start_ms = new Date().getTime();
-  var ms_wait = 1000;
+  var wait_ms = 1000;
 
   function timer(timeout) {
-    var ms_passed = new Date().getTime() - start_ms;
-    arc_time_passed(ms_passed / max_ms);
+    var passed_ms = new Date().getTime() - start_ms;
+    arc_time_passed(passed_ms / deadline_ms);
 
-    if (ms_passed < max_ms) setTimeout(timer, ms_wait);
+    if (passed_ms < deadline_ms) setTimeout(timer, wait_ms);
   }
-  timer(ms_wait);
+  timer(wait_ms);
 };
+
+// }}}
+
+// {{{ 入力箇所の特定と対応するテキストのハイライト
 
 function lines_upto(text, end) {
   l = 0;
@@ -136,8 +166,14 @@ function input_onkeyup(e) {
           ', Pos : ' + cur_pos +
           ', Lines: ' + cur_line + '/' + n_lines);
     }
+  } else {
+    arc_percent(0, 0.3, time_pass_visual_information.r, 2, '#00a');
   }
 }
+
+// }}}
+
+// {{{ 初期化
 
 $(function () {
     $('#version-number').text(version_info);
@@ -177,7 +213,7 @@ $(function () {
     $('<div>').append($input_area).appendTo($contents)
     $input_area.bind('paste', punish);
     $input_area.bind('contextmenu', punish);
-    $input_area.bind('click', function () { start_timer(1 * 60 * 1000); });
+    $input_area.bind('click', function () { start_timer(status_info.seconds_to_go); });
 
     if (debug) {
       $body.append($('<hr>')).append($('<p>').append($('<strong>').text('Debug mode')));
@@ -186,3 +222,5 @@ $(function () {
 
     readText();
   });
+
+// }}}
