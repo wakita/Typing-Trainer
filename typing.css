@@ -22,7 +22,7 @@ canvas {
 }
 
 #control-panel {
-  /* bottom: 2px; */
+  bottom: 2px;
   z-index: -1;
   border-color: #eff;
   background-color: #eff;

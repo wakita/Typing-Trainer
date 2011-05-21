@@ -175,10 +175,22 @@ function input_onkeyup(e) {
 
 // {{{ コントロールパネル
 
+var control_panel = {
+};
+
 $(function () {
     $control_panel = $('<div>').attr({ id: 'control-panel', 'class': 'panel' })
     .html($('<strong>').text('Control panel'))
     .appendTo($(document.body));
+    var put = function (title) {
+    };
+    [ 'ignore_blank', 'ignore_symbol', 'ignore_number', 'ignore_case' ].forEach(
+      function (title) {
+        $par = $('<p>').append($('<strong>').text(title + ': '))
+        .appendTo($control_panel);
+
+        control_panel[title] = $('<span>').appendTo($par);
+      });
 })
 
 // }}}
