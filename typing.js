@@ -5,8 +5,30 @@
 var version_info = 'Version 0.02 (May 21, 2011)';
 var debug = true;
 
-var g_context, $status_panel, $login_name, $control_panel;
-var $text_area, $warning_area, $input_area, $debug_area;
+var $body;
+var   g_context;
+var   $status_panel;
+var   $control_panel;
+var   $contents;
+var     $text_area;
+var     $warning_area;
+var     $input_area;
+var   $debug_area;
+
+$(function () {
+    $('#version-number').text(version_info);
+    $body = $(document.body);
+    $contents = $('#contents-come-here');
+
+    $text_area = $('<blockquote>').attr('id', 'text').appendTo($contents);
+    $text_area.bind('copy', punish);
+    $text_area.bind('contextmenu', punish);
+
+    $contents.append($('<p>').text('この文章を以下に入力して下さい．'));
+
+    $status_panel = $('<div>').attr({ id: 'status-panel', 'class': 'panel' })
+    .appendTo($body);
+  });
 
 var frame;
 
@@ -74,6 +96,8 @@ var readText = function () {
 
 // {{{ ずるした人へのお仕置き
 
+$(function () { $warning_area = $('<div>').appendTo($contents); });
+
 var n_cheat = 0;
 
 var punish = function () {
@@ -136,6 +160,16 @@ function start_timer(deadline) {
 
 // {{{ 入力箇所の特定と対応するテキストのハイライト
 
+$(function () {
+    $input_area =
+      $('<textarea>').attr({ id: 'input', cols: 80, rows: 20 })
+    .bind('keyup', input_onkeyup);
+    $('<div>').append($input_area).appendTo($contents)
+    $input_area.bind('paste', punish);
+    $input_area.bind('contextmenu', punish);
+    $input_area.bind('click', function () { start_timer(status_info.seconds_to_go); });
+  });
+
 function lines_upto(text, end) {
   l = 0;
   for (var p = 0, p2 = 0;
@@ -175,18 +209,18 @@ function input_onkeyup(e) {
 
 // {{{ コントロールパネル
 
-var control_panel = {
-};
+var control_panel = { };
 
 $(function () {
     $control_panel = $('<div>').attr({ id: 'control-panel', 'class': 'panel' })
     .html($('<strong>').text('Control panel'))
-    .appendTo($(document.body));
+    .appendTo($body);
     var put = function (title) {
     };
-    [ 'ignore_blank', 'ignore_symbol', 'ignore_number', 'ignore_case' ].forEach(
+    [ '空白を無視する', '記号を無視する', '数字を無視する', '文字の大小を無視する' ].forEach(
       function (title) {
-        $par = $('<p>').append($('<strong>').text(title + ': '))
+        $par = $('<p>').append($('<input>').attr('type', 'checkbox'))
+        .append($('<strong>').text(' ' + title))
         .appendTo($control_panel);
 
         control_panel[title] = $('<span>').appendTo($par);
@@ -198,12 +232,6 @@ $(function () {
 // {{{ 初期化
 
 $(function () {
-    $('#version-number').text(version_info);
-
-    var $body = $(document.body);
-    $login_name = $('#login_name');
-
-    // Canvas
     var $canvas =
       $('<canvas>').attr({
           width: document.width,
@@ -213,29 +241,6 @@ $(function () {
 
     g_context = c.getContext('2d');
 
-    // Status panel
-
-    $status_panel = $('<div>').attr({ id: 'status-panel', 'class': 'panel' })
-    .appendTo($body);
-
-    // Contents
-    $contents = $('#contents-come-here');
-
-    $text_area = $('<blockquote>').attr('id', 'text').appendTo($contents);
-    $text_area.bind('copy', punish);
-    $text_area.bind('contextmenu', punish);
-
-    $warning_area = $('<div>').appendTo($contents);
-
-    $contents.append($('<p>').text('この文章を以下に入力して下さい．'));
-
-    $input_area =
-      $('<textarea>').attr({ id: 'input', cols: 80, rows: 20 })
-    .bind('keyup', input_onkeyup);
-    $('<div>').append($input_area).appendTo($contents)
-    $input_area.bind('paste', punish);
-    $input_area.bind('contextmenu', punish);
-    $input_area.bind('click', function () { start_timer(status_info.seconds_to_go); });
 
     if (debug) {
       $body.append($('<hr>')).append($('<p>').append($('<strong>').text('Debug mode')));
@@ -246,3 +251,4 @@ $(function () {
   });
 
 // }}}
+
