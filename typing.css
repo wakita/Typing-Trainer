@@ -16,14 +16,14 @@ canvas {
 
 #status-panel {
   top: 2px;
-  z-index: -2;
+  z-index: -1;
   border-color: #eff;
   background-color: #eff;
 }
 
 #control-panel {
   bottom: 2px;
-  z-index: -1;
+  z-index: 1;
   border-color: #eff;
   background-color: #eff;
 }
@@ -51,7 +51,6 @@ canvas {
 }
 
 #about-this-project {
-  text-align: right;
   font-size: small;
 }
 
