@@ -143,12 +143,18 @@ function arc_time_passed(t) {
   if (t > 0.8) arc_percent(0.8, t, r, w, '#fcc');
 }
 
+var timer_started = false;
+
 function start_timer(deadline) {
+  if (timer_started) return;
+  timer_started = true;
+
   var deadline_ms = deadline * 1000;
   var info = time_pass_visual_information;
   info.r = Math.min(frame.w, frame.h) / 2 - 30;
 
   var start_ms = new Date().getTime();
+  last_keyup_ms = start_ms;
   var wait_ms = 1000;
 
   function timer(timeout) {
@@ -156,7 +162,7 @@ function start_timer(deadline) {
     arc_time_passed(passed_ms / deadline_ms);
 
     if (passed_ms < deadline_ms) setTimeout(timer, wait_ms);
-    else { grade(); return }
+    else { grade((last_keyup_ms - start_ms) / deadline_ms); return }
   }
   timer(wait_ms);
 };
@@ -186,8 +192,10 @@ function lines_upto(text, end) {
 }
 
 var cur_line = undefined;
+var last_keyup_ms = 0;
 
 function input_onkeyup(e) {
+  last_keyup_ms = new Date().getTime();
   var c = e.keyCode;
   if (!cur_line || c == 8 || c == 13 || 37 <= c && c <= 40) {
     var last_line = cur_line;
@@ -217,23 +225,87 @@ function input_onkeyup(e) {
 word_rex = {
   number: new RegExp('[0-9]+', 'gm'),
   symbol: new RegExp('[^a-zA-Z0-9\\s]+', 'gm'),
+  whitespace: new RegExp('\\s', 'gm'),
   whitespaces: new RegExp('[\\s]{2,}', 'gm')
 };
 
-function grade() {
+function grade(time_ratio) {
   var status = read_control_panel();
 
-  var texts = [ $text_area.text(), $input_area.val() ];
+  var texts = []
+  var assignment = '';
+  $('#text').children('span').each(function () {
+      assignment += $(this).text() + '\n';
+    });
+  texts.push(assignment);
+  texts.push($input_area.val());
+
+  var word_counts = [ {}, {} ];
   for (var i in texts) {
     var text = texts[i];
-    if (status['記号を無視する']) text = text.replace(word_rex.symbol, '');
-    if (status['数字を無視する']) text = text.replace(word_rex.number, '');
+    if (status['記号を無視する']) text = text.replace(word_rex.symbol, ' ');
+    if (status['数字を無視する']) text = text.replace(word_rex.number, ' ');
     if (status['文字の大小を無視する']) text = text.toLowerCase();
     if (status['空白を無視する']) text = text.replace(word_rex.whitespaces, ' ');
-    texts[i] = text; // text.split(' ');
+    texts[i] = text;
+    // if (debug) alert('' + i + ': ' + text);
 
-    if (debug) alert('' + i + ': ' + text);
+    var words = text.split(word_rex.whitespace);
+    var wc = word_counts[i];
+    words.forEach(function (word) {
+        if (word.length > 0 && wc[word]) wc[word]++;
+        else wc[word] = 1;
+      });
   }
+
+  var length_ratio = texts[1].length / texts[0].length;
+
+  var total_words = 0;
+  var wc_diff = {};
+  for (word in word_counts[0]) {
+    wc_diff[word] = word_counts[0][word];
+    total_words += word_counts[0][word];
+  }
+  for (word in word_counts[1])
+    wc_diff[word] = (wc_diff[word] || 0) - word_counts[1][word];
+
+  var message = '';
+
+  message += '標準時間の' + Math.floor(time_ratio * 100) + '%で入力を完了しました．\n';
+
+  var words_failed_to_input = [];
+  var n_failures = 0;
+  for (word in wc_diff) {
+    if (word.length > 0 && wc_diff[word] != 0) {
+      words_failed_to_input.push(word + ' (' + wc_diff[word] + ') ');
+      n_failures += Math.abs(wc_diff[word]);
+    }
+  }
+  var miss_rate = Math.floor(Math.min(n_failures / total_words, 1) * 100);
+
+  message += 'スペルミスの率: ' + miss_rate + '\n';
+
+  if (miss_rate == 0) {
+    message += '機械のような正確さで入力されています．脱帽しました．';
+  } else if (n_failures < total_words * 0.1) {
+    message += 'スペルミスはほとんどありませんでした．すばらしい．';
+  } else if (n_failures < total_words * 0.2) {
+    message += 'タイピングスピードはよいのですが，スペルミスが目立ちます．スピードを少し抑えてみては？';
+  } else if (length_ratio < 0.5) {
+    message += 'タイピングスピードが足りません．がんばって．';
+  } else if (n_failures < total_words * length_ratio * 0.1) {
+    message += 'かなり正確にタイピングしています．あとはスピードですね．';
+  } else if (n_failures < total_words * length_ratio * 0.2) {
+    message += 'もう少しスペルミスが減るといいのですが．';
+  } else {
+    message += 'がんばって';
+  }
+
+  message += '\n';
+
+  message += ''.concat.apply(words_failed_to_input);
+
+  alert(message);
 }
 
 // }}}
