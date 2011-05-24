@@ -3,7 +3,7 @@
 // {{{ 変数宣言
 
 var version_info = 'Version 0.02 (May 21, 2011)';
-var debug = false;
+var debug = true;
 
 var $body;
 var   g_context;
@@ -68,7 +68,7 @@ function show_status() {
 
 var read_text = function (path, size, offset) {
   path = path || 'docs/pg76.txt';
-  size = size || 500;
+  size = size || 100;
   offset = offset || -1;
 
   var newline_rex = new RegExp(/\n/gm);
@@ -118,7 +118,7 @@ var punish = function () {
 
 // }}}
 
-// {{{ 経過時間の描画
+// {{{ 時間経過
 
 function arc_percent(start, end, radius, width, style) {
   var g = g_context;
@@ -156,6 +156,7 @@ function start_timer(deadline) {
     arc_time_passed(passed_ms / deadline_ms);
 
     if (passed_ms < deadline_ms) setTimeout(timer, wait_ms);
+    else { grade(); return }
   }
   timer(wait_ms);
 };
@@ -211,6 +212,32 @@ function input_onkeyup(e) {
 
 // }}}
 
+// {{{ 採点
+
+word_rex = {
+  number: new RegExp('[0-9]+', 'gm'),
+  symbol: new RegExp('[^a-zA-Z0-9\\s]+', 'gm'),
+  whitespaces: new RegExp('[\\s]{2,}', 'gm')
+};
+
+function grade() {
+  var status = read_control_panel();
+
+  var texts = [ $text_area.text(), $input_area.val() ];
+  for (var i in texts) {
+    var text = texts[i];
+    if (status['記号を無視する']) text = text.replace(word_rex.symbol, '');
+    if (status['数字を無視する']) text = text.replace(word_rex.number, '');
+    if (status['文字の大小を無視する']) text = text.toLowerCase();
+    if (status['空白を無視する']) text = text.replace(word_rex.whitespaces, ' ');
+    texts[i] = text; // text.split(' ');
+
+    if (debug) alert('' + i + ': ' + text);
+  }
+}
+
+// }}}
+
 // {{{ リクエストハンドラー
 var request_handler = [];
 // }}}
@@ -229,9 +256,7 @@ request_handler['?trial'] =
 request_handler['?competition'] =
   function () {
     $control_panel.css({ display: 'none' });
-    read_text('docs/pg76.txt', 1000, 5000);
-
-    read_panel();
+    read_text('docs/pg76.txt', 100, 5000);
   };
 
 // }}}
@@ -250,20 +275,20 @@ $(function () {
     };
     [ '空白を無視する', '記号を無視する', '数字を無視する', '文字の大小を無視する' ].forEach(
       function (title) {
-        $par = $('<p>').append($('<input>').attr('type', 'checkbox'))
+        control_panel[title] = $('<input>').attr('type', 'checkbox');
+        $par = $('<p>').append(control_panel[title])
         .append($('<strong>').text(' ' + title))
         .appendTo($control_panel);
-
-        control_panel[title] = $('<span>').appendTo($par);
       });
 })
 
-function read_panel() {
+function read_control_panel() {
   var status = {};
-  $control_panel.children('p').each(function () {
-      $p = $(this);
-      status[$p.text()] = $p.children('input').first().attr('checked');
-    });
+  // m = '';
+  for (title in control_panel) {
+    $checkbox = control_panel[title];
+    status[title] = $checkbox.attr('checked');
+  }
   return status;
 }
 
