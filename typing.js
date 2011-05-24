@@ -66,6 +66,8 @@ function show_status() {
 
 // {{{ テキストの読み込みと内容の分析
 
+var assignment;
+
 var read_text = function (path, size, offset) {
   path = path || 'docs/pg76.txt';
   size = size || 100;
@@ -81,6 +83,7 @@ var read_text = function (path, size, offset) {
     'document.php',
     { command: [ 'choose_text', path, size, offset ] },
     function (text) {
+      assignment = text;
       var texts = text.split('\n');
       for (var i = 0; i < texts.length; i++) {
         $text_area.append($('<span>').attr({ id: 'line_' + (i+1) }).html(texts[i] + '<br>'));
@@ -125,7 +128,7 @@ function arc_percent(start, end, radius, width, style) {
 
   g.beginPath();
   g.strokeStyle = style;
-  g.lineWidth = 40;
+  g.lineWidth = width;
   var theta1 = 2 * Math.PI * (start - 0.25);
   var theta2 = 2 * Math.PI * (end - 0.25);
   g.arc(frame.cx, frame.cy, radius, theta1, theta2, false);
@@ -169,7 +172,7 @@ function start_timer(deadline) {
 
 // }}}
 
-// {{{ 入力箇所の特定と対応するテキストのハイライト
+// {{{ キー入力
 
 $(function () {
     $input_area =
@@ -214,7 +217,8 @@ function input_onkeyup(e) {
           ', Lines: ' + cur_line + '/' + n_lines);
     }
   } else {
-    arc_percent(0, 0.3, time_pass_visual_information.r, 2, '#00a');
+    arc_percent(0, $input_area[0].selectionStart / assignment.length,
+      time_pass_visual_information.r, 1, '#00a');
   }
 }
 
@@ -233,10 +237,6 @@ function grade(time_ratio) {
   var status = read_control_panel();
 
   var texts = []
-  var assignment = '';
-  $('#text').children('span').each(function () {
-      assignment += $(this).text() + '\n';
-    });
   texts.push(assignment);
   texts.push($input_area.val());
 
@@ -277,7 +277,7 @@ function grade(time_ratio) {
   var n_failures = 0;
   for (word in wc_diff) {
     if (word.length > 0 && wc_diff[word] != 0) {
-      words_failed_to_input.push(word + ' (' + wc_diff[word] + ') ');
+      words_failed_to_input.push(word + ' (' + wc_diff[word] + ')');
       n_failures += Math.abs(wc_diff[word]);
     }
   }
@@ -303,7 +303,10 @@ function grade(time_ratio) {
 
   message += '\n';
 
-  message += ''.concat.apply(words_failed_to_input);
+  if (words_failed_to_input.length > 0) {
+    message +=
+      words_failed_to_input.reduce(function (w, s) { return w + ', ' + s; });
+  }
 
   alert(message);
 }
