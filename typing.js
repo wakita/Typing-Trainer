@@ -3,7 +3,7 @@
 // {{{ 変数宣言
 
 var version_info = 'Version 0.02 (May 21, 2011)';
-var debug = true;
+var debug = false;
 
 var $body;
 var   g_context;
@@ -66,7 +66,11 @@ function show_status() {
 
 // {{{ テキストの読み込みと内容の分析
 
-var readText = function () {
+var read_text = function (path, size, offset) {
+  path = path || 'docs/pg76.txt';
+  size = size || 500;
+  offset = offset || -1;
+
   var newline_rex = new RegExp(/\n/gm);
   var newlines_rex = new RegExp(/\n+/gm);
   var non_alpha_rex = new RegExp(/[^a-z]+/gim);
@@ -75,7 +79,7 @@ var readText = function () {
 
   $.post(
     'document.php',
-    { command: [ 'choose_text', 'docs/pg76.txt', 500 ] },
+    { command: [ 'choose_text', path, size, offset ] },
     function (text) {
       var texts = text.split('\n');
       for (var i = 0; i < texts.length; i++) {
@@ -207,14 +211,41 @@ function input_onkeyup(e) {
 
 // }}}
 
+// {{{ リクエストハンドラー
+var request_handler = [];
+// }}}
+
+// {{{ 練習モード
+
+request_handler['?trial'] =
+  function () {
+    $control_panel.css({ display: '' });
+    read_text();
+  };
+// }}}
+
+// {{{ 本番モード
+
+request_handler['?competition'] =
+  function () {
+    $control_panel.css({ display: 'none' });
+    read_text('docs/pg76.txt', 1000, 5000);
+
+    read_panel();
+  };
+
+// }}}
+
 // {{{ コントロールパネル
 
-var control_panel = { };
+var control_panel = {};
 
 $(function () {
-    $control_panel = $('<div>').attr({ id: 'control-panel', 'class': 'panel' })
-    .html($('<strong>').text('Control panel'))
-    .appendTo($body);
+    $control_panel =
+      ($('<div>').attr({ id: 'control-panel', 'class': 'panel' })
+        .css({ 'display': 'none' })
+        .html($('<strong>').text('Control panel'))
+        .appendTo($body));
     var put = function (title) {
     };
     [ '空白を無視する', '記号を無視する', '数字を無視する', '文字の大小を無視する' ].forEach(
@@ -226,6 +257,15 @@ $(function () {
         control_panel[title] = $('<span>').appendTo($par);
       });
 })
+
+function read_panel() {
+  var status = {};
+  $control_panel.children('p').each(function () {
+      $p = $(this);
+      status[$p.text()] = $p.children('input').first().attr('checked');
+    });
+  return status;
+}
 
 // }}}
 
@@ -241,14 +281,17 @@ $(function () {
 
     g_context = c.getContext('2d');
 
+    // $control_panel.css({ display: '' });
 
     if (debug) {
       $body.append($('<hr>')).append($('<p>').append($('<strong>').text('Debug mode')));
       $debug_area = $('<div>').attr('id', 'debug').appendTo($body);
     }
 
-    readText();
+    var commandline = location.search.split('&');
+    if (commandline.length === 0) commandline = [ '?trial' ];
+    var command = request_handler[commandline[0]] || request_handler['?trial'];
+    command.apply(commandline.splice(0, 1));
   });
 
 // }}}
-

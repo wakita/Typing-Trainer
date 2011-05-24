@@ -52,6 +52,8 @@ canvas {
 
 #about-this-project {
   font-size: small;
+  color: #fff;
+  background-color: #69d;
 }
 
 textarea {

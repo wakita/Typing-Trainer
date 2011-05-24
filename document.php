@@ -64,11 +64,13 @@ function choose_text_from($path, $begin, $minsize) {
     return $text;
 }
 
-function choose_text($path, $minsize) {
+function choose_text($path, $minsize, $offset) {
     $ebook = open_ebook($path);
     $fp = $ebook['fp'];
-    $begin = rand($ebook['begin'], $ebook['end'] - $minsize * 3);
-    $text = read_document($fp, $begin, $minsize);
+    if ($offset == -1) {
+        $offset = rand($ebook['begin'], $ebook['end'] - $minsize * 3);
+    }
+    $text = read_document($fp, $offset, $minsize);
     fclose($fp);
     return $text;
 }
@@ -82,7 +84,8 @@ if (!isset($_POST['command'])) {
     if ($command[0] === 'choose_text') {
         $path = $command[1];
         $minsize = $command[2];
-        $ret = choose_text($path, $minsize);
+        $offset = $command[3];
+        $ret = choose_text($path, $minsize, $offset);
     } else $ret = 'Invalid command' . $command[0];
 }
 
