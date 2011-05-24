@@ -78,7 +78,7 @@ function choose_text($path, $minsize, $offset) {
 $ret = '';
 
 if (!isset($_POST['command'])) {
-    $ret = choose_text('docs/pg76.txt', 1000);
+    $ret = choose_text('docs/pg76.txt', 1000, 5000);
 } else {
     $command = $_POST['command'];
     if ($command[0] === 'choose_text') {

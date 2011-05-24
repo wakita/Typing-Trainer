@@ -5,23 +5,39 @@ canvas {
   z-index: -100;
 }
 
-.panel {
+table {
+  width: 100%;
+}
+
+thead {
+  background-color: #448;
+  color: #fff;
+}
+
+td {
+  padding: 1px 1px 4px 4px;
+}
+
+#panels {
   position: fixed;
+  top: 2px;
   right: 2px;
-  padding: 7px;
+}
+
+.panel {
+  padding: 0px;
   border-style: groove;
   border-width: thin;
   opacity: 0.7;
 }
 
-#status-panel {
-  top: 2px;
+#panels #status {
   z-index: -1;
   border-color: #eff;
   background-color: #eff;
 }
 
-#control-panel {
+#panels #control {
   bottom: 2px;
   z-index: 1;
   border-color: #eff;

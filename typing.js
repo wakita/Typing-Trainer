@@ -3,12 +3,11 @@
 // {{{ 変数宣言
 
 var version_info = 'Version 0.02 (May 21, 2011)';
-var debug = true;
+var debug = false;
 
 var $body;
 var   g_context;
-var   $status_panel;
-var   $control_panel;
+var   $panels;
 var   $contents;
 var     $text_area;
 var     $warning_area;
@@ -26,8 +25,15 @@ $(function () {
 
     $contents.append($('<p>').text('この文章を以下に入力して下さい．'));
 
-    $status_panel = $('<div>').attr({ id: 'status-panel', 'class': 'panel' })
-    .appendTo($body);
+    $panels = $('<div>').attr({ id: 'panels' }).appendTo($body);
+
+    $panels.status =
+      ($('<div>').attr({ id: 'status', 'class': 'panel' })
+        .appendTo($panels));
+
+    $panels.control =
+      ($('<div>').attr({ id: 'control', 'class': 'panel' })
+        .appendTo($panels));
   });
 
 var frame;
@@ -46,13 +52,18 @@ var status_info = {
 };
 
 function show_status() {
-  $status = $('#status-panel');
+  $status = $panels.status;
+  $table = $('<table>').appendTo($status);
+  $('<thead>').append($('<tr>').append($('<th>').text('情報').attr('colspan', 2))).appendTo($table);
+  $tbody = $('<tbody>').appendTo($table);
+
   var put = function (title, content) {
-    $p = $('<p>').append($('<strong>').text(title));
-    if (typeof content !== 'undefined') $p.append(': ' + content);
-    $status.append($p);
+    ($('<tr>')
+      .append($('<td>').append($('<strong>').text(title)))
+      .append($('<td>').text(content)))
+    .appendTo($tbody);
   };
-  put('Information');
+
   put('名前', status_info.login_name);
   put('総文字数', status_info.text_letters)
   put('アルファベット', status_info.text_alphas);
@@ -176,7 +187,7 @@ function start_timer(deadline) {
 
 $(function () {
     $input_area =
-      $('<textarea>').attr({ id: 'input', cols: 80, rows: 20 })
+      $('<textarea>').attr({ id: 'input', cols: 80, rows: 10 })
     .bind('keyup', input_onkeyup);
     $('<div>').append($input_area).appendTo($contents)
     $input_area.bind('paste', punish);
@@ -321,7 +332,7 @@ var request_handler = [];
 
 request_handler['?trial'] =
   function () {
-    $control_panel.css({ display: '' });
+    $panels.control.css({ display: '' });
     read_text();
   };
 // }}}
@@ -341,19 +352,18 @@ request_handler['?competition'] =
 var control_panel = {};
 
 $(function () {
-    $control_panel =
-      ($('<div>').attr({ id: 'control-panel', 'class': 'panel' })
-        .css({ 'display': 'none' })
-        .html($('<strong>').text('Control panel'))
-        .appendTo($body));
-    var put = function (title) {
-    };
-    [ '空白を無視する', '記号を無視する', '数字を無視する', '文字の大小を無視する' ].forEach(
+    ($panels.control.css({ 'display': 'none' }));
+
+    $table = $('<table>').appendTo($panels.control);
+    $table.append($('<thead>').append($('<th>').text('設定').attr('colspan', 2)));
+
+    [ '空白を無視する', '記号を無視する',
+    '数字を無視する', '文字の大小を無視する' ].forEach(
       function (title) {
-        control_panel[title] = $('<input>').attr('type', 'checkbox');
-        $par = $('<p>').append(control_panel[title])
-        .append($('<strong>').text(' ' + title))
-        .appendTo($control_panel);
+        ($('<tr>')
+          .append($('<td>').append($('<input>').attr('type', 'checkbox')))
+          .append($('<td>').append($('<strong>').text(' ' + title))))
+        .appendTo($table);
       });
 })
 
@@ -380,8 +390,6 @@ $(function () {
     frame = { w: c.width, h: c.height, cx: c.width / 2, cy: c.height / 2 };
 
     g_context = c.getContext('2d');
-
-    // $control_panel.css({ display: '' });
 
     if (debug) {
       $body.append($('<hr>')).append($('<p>').append($('<strong>').text('Debug mode')));
