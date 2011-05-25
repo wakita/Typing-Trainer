@@ -94,8 +94,8 @@ function show_status() {
 var assignment;
 
 var read_text = function (path, size, offset) {
-  path = path || 'docs/pg76.txt';
-  size = size || 100;
+  path = path || 'docs/pg1661.txt';
+  size = size || 300;
   offset = offset || -1;
 
   var newline_rex = new RegExp(/\n/gm);
@@ -395,7 +395,7 @@ request_handler['?competition'] =
   function () {
     competition_mode = true;
     $panels.control.css({ display: 'none' });
-    read_text('docs/pg76.txt', 100, 5000);
+    read_text('docs/pg1661.txt', 300, 5000);
   };
 
 // }}}

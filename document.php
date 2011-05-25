@@ -89,7 +89,7 @@ function save_record($date, $id, $time_ratio, $miss_rate) {
 $ret = '';
 
 if (!isset($_POST['command'])) {
-    $ret = choose_text('docs/pg1661.txt', 1000, 5000);
+    $ret = choose_text('docs/pg76.txt', 500, 5000);
 } else {
     $command = $_POST['command'];
     if ($command[0] === 'choose_text') {
