@@ -6,6 +6,7 @@ var version_info = 'Version 0.03 (May 26, 2011)';
 var debug = false;
 
 var competition_mode = false;
+var local_storage_cl_typing_your_ID = localStorage.cl_typing_your_ID;
 var $body;
 var   g_context;
 var   $panels;
@@ -63,13 +64,12 @@ function show_status() {
   if (competition_mode) {
     $your_ID = $('<input>').attr({ 'type': 'textfield' });
     ($('<tr>')
-      .append($('<td>').append($('<strong>').text('名前')))
+      .append($('<td>').append($('<strong>').text('ログイン名')))
       .append($your_ID))
     .appendTo($tbody);
   }
-  if (!localStorage.cl) localStorage.cl = {};
-  if (localStorage.cl.your_ID) {
-    $your_ID.val(localStorage.cl.your_ID);
+  if (localStorage.cl_typing_your_ID) {
+    $your_ID.val(localStorage.cl_typing_your_ID);
   }
 
   var put = function (title, content) {
@@ -185,7 +185,8 @@ function start_timer(deadline) {
       return false;
     }
 
-    localStorage.cl.your_ID = $your_ID.val();
+    localStorage.cl_typing_your_ID = $your_ID.val();
+    if (debug) alert('$your_ID: ' + $your_ID.val() + ', localStorage: ' + localStorage.cl_typing_your_ID);
   }
 
   if (timer_started) return;
