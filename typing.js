@@ -5,9 +5,11 @@
 var version_info = 'Version 0.02 (May 21, 2011)';
 var debug = false;
 
+var competition_mode = false;
 var $body;
 var   g_context;
 var   $panels;
+var     $your_ID;
 var   $contents;
 var     $text_area;
 var     $warning_area;
@@ -28,12 +30,13 @@ $(function () {
     $panels = $('<div>').attr({ id: 'panels' }).appendTo($body);
 
     $panels.status =
-      ($('<div>').attr({ id: 'status', 'class': 'panel' })
-        .appendTo($panels));
+      ($('<div>').attr({ 'class': 'panel' }).appendTo($panels));
 
     $panels.control =
-      ($('<div>').attr({ id: 'control', 'class': 'panel' })
-        .appendTo($panels));
+      ($('<div>').attr({ 'class': 'panel' }).appendTo($panels));
+
+    $panels.result =
+      ($('<div>').attr({ 'class': 'panel' }).appendTo($panels));
   });
 
 var frame;
@@ -43,7 +46,7 @@ var frame;
 // {{{ 情報ウィンドウの内容
 
 var status_info = {
-  login_name: 'ななしのごんべい',
+  login_name: '',
   text_letters: '',
   text_alphas: '',
   text_numbers: '',
@@ -57,6 +60,18 @@ function show_status() {
   $('<thead>').append($('<tr>').append($('<th>').text('情報').attr('colspan', 2))).appendTo($table);
   $tbody = $('<tbody>').appendTo($table);
 
+  if (competition_mode) {
+    $your_ID = $('<input>').attr({ 'type': 'textfield' });
+    ($('<tr>')
+      .append($('<td>').append($('<strong>').text('名前')))
+      .append($your_ID))
+    .appendTo($tbody);
+  }
+  if (!localStorage.cl) localStorage.cl = {};
+  if (localStorage.cl.your_ID) {
+    $your_ID.val(localStorage.cl.your_ID);
+  }
+
   var put = function (title, content) {
     ($('<tr>')
       .append($('<td>').append($('<strong>').text(title)))
@@ -64,7 +79,6 @@ function show_status() {
     .appendTo($tbody);
   };
 
-  put('名前', status_info.login_name);
   put('総文字数', status_info.text_letters)
   put('アルファベット', status_info.text_alphas);
   put('数字', status_info.text_numbers);
@@ -158,8 +172,22 @@ function arc_time_passed(t) {
 }
 
 var timer_started = false;
+var ID_rex = new RegExp('^[0-9]{2}[BMD][0-9_]{5}$', 'i');
 
 function start_timer(deadline) {
+  if (competition_mode) {
+    if ($your_ID.val() == '') {
+      alert('まずは，右上の空欄にあなたのログイン名を記入して下さい．');
+      return false;
+    }
+    if (!$your_ID.val().match(ID_rex)) {
+      alert('正しいログイン名を記入して下さい．');
+      return false;
+    }
+
+    localStorage.cl.your_ID = $your_ID.val();
+  }
+
   if (timer_started) return;
   timer_started = true;
 
@@ -178,6 +206,7 @@ function start_timer(deadline) {
     if (passed_ms < deadline_ms) setTimeout(timer, wait_ms);
     else { grade((last_keyup_ms - start_ms) / deadline_ms); return }
   }
+
   timer(wait_ms);
 };
 
@@ -280,9 +309,13 @@ function grade(time_ratio) {
   for (word in word_counts[1])
     wc_diff[word] = (wc_diff[word] || 0) - word_counts[1][word];
 
-  var message = '';
+  var $result = $panels.result;
 
-  message += '標準時間の' + Math.floor(time_ratio * 100) + '%で入力を完了しました．\n';
+  if (time_ratio < 0.90)
+    $result.append($('<p>')
+      .text('標準時間の'
+        + Math.floor(time_ratio * 100)
+        + '%で入力を完了したようです．速いですね！'));
 
   var words_failed_to_input = [];
   var n_failures = 0;
@@ -294,8 +327,11 @@ function grade(time_ratio) {
   }
   var miss_rate = Math.floor(Math.min(n_failures / total_words, 1) * 100);
 
-  message += 'スペルミスの率: ' + miss_rate + '\n';
+  $result.append(
+    $('<p>').append('<strong>').text('スペルミス率: ')
+    .append(miss_rate));
 
+  var message = '';
   if (miss_rate == 0) {
     message += '機械のような正確さで入力されています．脱帽しました．';
   } else if (n_failures < total_words * 0.1) {
@@ -319,9 +355,23 @@ function grade(time_ratio) {
       words_failed_to_input.reduce(function (w, s) { return w + ', ' + s; });
   }
 
-  alert(message);
+  $result.append($('<p>').text(message));
+
+  $.post('document.php',
+    { command: [
+      'save_record', '' + new Date(),
+      $your_ID.val().toUpperCase(), time_ratio, miss_rate ] },
+    function (text) { if (debug) alert(text); });
 }
 
+// }}}
+
+// {{{ 結果表示
+
+$(function () {
+    $table = $('<table>').appendTo($panels.result);
+    $table.append($('<thead>').append($('<th>').text('結果').attr('colspan', 2)));
+});
 // }}}
 
 // {{{ リクエストハンドラー
@@ -332,6 +382,7 @@ var request_handler = [];
 
 request_handler['?trial'] =
   function () {
+    competition_mode = false;
     $panels.control.css({ display: '' });
     read_text();
   };
@@ -341,7 +392,8 @@ request_handler['?trial'] =
 
 request_handler['?competition'] =
   function () {
-    $control_panel.css({ display: 'none' });
+    competition_mode = true;
+    $panels.control.css({ display: 'none' });
     read_text('docs/pg76.txt', 100, 5000);
   };
 
@@ -355,7 +407,7 @@ $(function () {
     ($panels.control.css({ 'display': 'none' }));
 
     $table = $('<table>').appendTo($panels.control);
-    $table.append($('<thead>').append($('<th>').text('設定').attr('colspan', 2)));
+    $table.append($('<thead>').append($('<th>').text('判定方法の設定').attr('colspan', 2)));
 
     [ '空白を無視する', '記号を無視する',
     '数字を無視する', '文字の大小を無視する' ].forEach(

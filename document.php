@@ -75,10 +75,21 @@ function choose_text($path, $minsize, $offset) {
     return $text;
 }
 
+function save_record($date, $id, $time_ratio, $miss_rate) {
+  $path = 'stats/' . $id . '.txt';
+  $fp = fopen($path, 'a');
+  fputs($fp, 'ID = ' . $id . "\n");
+  fputs($fp, 'Date = ' . $date . "\n");
+  fputs($fp, 'Time ratio = ' . $time_ratio . "\n");
+  fputs($fp, 'Miss ratio = ' . $miss_rate . "\n\n");
+  fclose($fp);
+  return 'Successfully saved';
+}
+
 $ret = '';
 
 if (!isset($_POST['command'])) {
-    $ret = choose_text('docs/pg76.txt', 1000, 5000);
+    $ret = choose_text('docs/pg1661.txt', 1000, 5000);
 } else {
     $command = $_POST['command'];
     if ($command[0] === 'choose_text') {
@@ -86,6 +97,8 @@ if (!isset($_POST['command'])) {
         $minsize = $command[2];
         $offset = $command[3];
         $ret = choose_text($path, $minsize, $offset);
+    } else if ($command[0] === 'save_record') {
+      $ret = save_record($command[1], $command[2], $command[3], $command[4]);
     } else $ret = 'Invalid command' . $command[0];
 }
 
