@@ -2,7 +2,7 @@
 
 // {{{ 変数宣言
 
-var version_info = 'Version 0.02 (May 21, 2011)';
+var version_info = 'Version 0.03 (May 26, 2011)';
 var debug = false;
 
 var competition_mode = false;
