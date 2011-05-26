@@ -67,9 +67,9 @@ function show_status() {
       .append($('<td>').append($('<strong>').text('ログイン名')))
       .append($your_ID))
     .appendTo($tbody);
-  }
-  if (localStorage.cl_typing_your_ID) {
-    $your_ID.val(localStorage.cl_typing_your_ID);
+    if (localStorage.cl_typing_your_ID) {
+      $your_ID.val(localStorage.cl_typing_your_ID);
+    }
   }
 
   var put = function (title, content) {
@@ -358,11 +358,13 @@ function grade(time_ratio) {
 
   $result.append($('<p>').text(message));
 
-  $.post('document.php',
-    { command: [
-      'save_record', '' + new Date(),
-      $your_ID.val().toUpperCase(), time_ratio, miss_rate ] },
-    function (text) { if (debug) alert(text); });
+  if (competition_mode) {
+    $.post('document.php',
+      { command: [
+        'save_record', '' + new Date(),
+        $your_ID.val().toUpperCase(), time_ratio, miss_rate ] },
+      function (text) { if (debug) alert(text); });
+  }
 }
 
 // }}}
@@ -402,10 +404,9 @@ request_handler['?competition'] =
 
 // {{{ コントロールパネル
 
-var control_panel = {};
-
 $(function () {
-    ($panels.control.css({ 'display': 'none' }));
+    $panels.control.css({ 'display': 'none' });
+    var $checkboxes = $panels.control.$checkboxes = {};
 
     $table = $('<table>').appendTo($panels.control);
     $table.append($('<thead>').append($('<th>').text('判定方法の設定').attr('colspan', 2)));
@@ -413,8 +414,9 @@ $(function () {
     [ '空白を無視する', '記号を無視する',
     '数字を無視する', '文字の大小を無視する' ].forEach(
       function (title) {
+        $checkboxes[title] = $('<input>').attr('type', 'checkbox');
         ($('<tr>')
-          .append($('<td>').append($('<input>').attr('type', 'checkbox')))
+          .append($('<td>').append($checkboxes[title]))
           .append($('<td>').append($('<strong>').text(' ' + title))))
         .appendTo($table);
       });
@@ -422,10 +424,9 @@ $(function () {
 
 function read_control_panel() {
   var status = {};
-  // m = '';
-  for (title in control_panel) {
-    $checkbox = control_panel[title];
-    status[title] = $checkbox.attr('checked');
+  var $checkboxes = $panels.control.$checkboxes;
+  for (title in $checkboxes) {
+    status[title] = $checkboxes[title].attr('checked');
   }
   return status;
 }
