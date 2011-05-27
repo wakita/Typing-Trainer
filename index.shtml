@@ -3,6 +3,7 @@
 <title>タイピングトレーナ</title>
 
 <link rel="stylesheet" type="text/css" href="typing.css">
+<script type="text/javascript" charset="UTF-8" src="debug.js"></script>
 <script type="text/javascript" charset="UTF-8" src="typing.js"></script>
 
 <div id="contents-come-here"></div>
@@ -10,6 +11,6 @@
 <hr>
 <div id="about-this-project">
   気にいっていただいたら，呟くなどして宣伝していただければ幸いです．<br>
-  「変なタイピングソフトで遊んでます (<a href="http://tinyurl.com/3md4ban">http://bit.ly/kDogj2</a>)」<br>
+  「変なタイピングソフトで遊んでます (<a href="http://bit.ly/iXy9PH">http://bit.ly/iXy9PH</a>)」<br>
   <a href="https://github.com/wakita/Typing-Trainer">Typing Trainer <span id="version-number"></span></a>
 </div>
