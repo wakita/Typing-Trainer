@@ -110,8 +110,11 @@ var read_text = function (path, size, offset) {
     function (text) {
       assignment = text;
       var texts = text.split('\n');
+      $text_area.texts = [];
       for (var i = 0; i < texts.length; i++) {
-        $text_area.append($('<span>').attr({ id: 'line_' + (i+1) }).html(texts[i] + '<br>'));
+        var $span = $('<span>').html(texts[i] + '<br>');
+        $text_area.texts.push($span);
+        $text_area.append($span);
       }
 
       status_info.text_letters = text.length;
@@ -217,7 +220,7 @@ function start_timer(deadline) {
 
 $(function () {
     $input_area =
-      $('<textarea>').attr({ id: 'input', cols: 80, rows: 10 })
+      $('<textarea>').attr({ cols: 80, rows: 10 })
     .bind('keyup', input_onkeyup);
     $('<div>').append($input_area).appendTo($contents)
     $input_area.bind('paste', punish);
@@ -235,22 +238,22 @@ function lines_upto(text, end) {
   return l;
 }
 
-var cur_line = undefined;
+var cur_line = -1;
 var last_keyup_ms = 0;
 
 function input_onkeyup(e) {
   last_keyup_ms = new Date().getTime();
   var c = e.keyCode;
-  if (!cur_line || c == 8 || c == 13 || 37 <= c && c <= 40) {
+  if (cur_line >= 0 || c == 8 || c == 13 || 37 <= c && c <= 40) {
     var last_line = cur_line;
     var cur_pos = $input_area[0].selectionStart;
     var input = $input_area.val();
-    var n_lines = lines_upto(input, input.length) + 1;
-    cur_line = lines_upto(input, cur_pos) + 1;
+    var n_lines = lines_upto(input, input.length);
+    cur_line = lines_upto(input, cur_pos);
 
-    if (last_line)
-      $('#line_' + last_line).attr('class', 'unfocus');
-    $('#line_' + cur_line).attr('class', 'focus');
+    if (last_line >= 0)
+      $text_area.texts[last_line].attr('class', 'unfocus');
+    $text_area.texts[cur_line].attr('class', 'focus');
 
     if (debug) {
       $debug_area.text('Key code: ' + e.keyCode +
@@ -290,7 +293,9 @@ function grade(time_ratio) {
     if (status['空白を無視する']) text = text.replace(word_rex.whitespaces, ' ');
     texts[i] = text;
     // if (debug) alert('' + i + ': ' + text);
+  }
 
+  for (var i in texts) {
     var words = text.split(word_rex.whitespace);
     var wc = word_counts[i];
     words.forEach(function (word) {
