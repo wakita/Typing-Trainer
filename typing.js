@@ -56,8 +56,8 @@ var status_info = {
 };
 
 function show_status() {
-  $status = $panels.status;
-  $table = $('<table>').appendTo($status);
+  $panels.status.children('table').remove();
+  var $table = $('<table>').appendTo($panels.status);
   $('<thead>').append($('<tr>').append($('<th>').text('情報').attr('colspan', 2))).appendTo($table);
   $tbody = $('<tbody>').appendTo($table);
 
@@ -111,11 +111,13 @@ var read_text = function (path, size, offset) {
       assignment = text;
       var texts = text.split('\n');
       $text_area.texts = [];
+      $text_area.children('span').remove();
       for (var i = 0; i < texts.length; i++) {
         var $span = $('<span>').html(texts[i] + '<br>');
         $text_area.texts.push($span);
         $text_area.append($span);
       }
+      $text_area.texts[0].attr('class', 'focus');
 
       status_info.text_letters = text.length;
       status_info.text_alphas = text.replace(non_alpha_rex, '').length;
@@ -208,7 +210,11 @@ function start_timer(deadline) {
     arc_time_passed(passed_ms / deadline_ms);
 
     if (passed_ms < deadline_ms) setTimeout(timer, wait_ms);
-    else { grade((last_keyup_ms - start_ms) / deadline_ms); return }
+    else {
+      timer_started = false;
+      grade((last_keyup_ms - start_ms) / deadline_ms);
+      return;
+    }
   }
 
   timer(wait_ms);
@@ -225,7 +231,9 @@ $(function () {
     $('<div>').append($input_area).appendTo($contents)
     $input_area.bind('paste', punish);
     $input_area.bind('contextmenu', punish);
-    $input_area.bind('click', function () { start_timer(status_info.seconds_to_go); });
+    $input_area.bind('click', function () {
+        start_timer(status_info.seconds_to_go);
+      });
   });
 
 function lines_upto(text, end) {
@@ -238,22 +246,26 @@ function lines_upto(text, end) {
   return l;
 }
 
-var cur_line = -1;
+var cur_line = 0;
 var last_keyup_ms = 0;
+
+function set_focus_on_line(l, focus) {
+  var $line = $text_area.texts[l];
+  if ($line) $line.attr('class', focus);
+};
 
 function input_onkeyup(e) {
   last_keyup_ms = new Date().getTime();
   var c = e.keyCode;
-  if (cur_line >= 0 || c == 8 || c == 13 || 37 <= c && c <= 40) {
+  if (c == 8 || c == 13 || 37 <= c && c <= 40) {
     var last_line = cur_line;
     var cur_pos = $input_area[0].selectionStart;
     var input = $input_area.val();
     var n_lines = lines_upto(input, input.length);
     cur_line = lines_upto(input, cur_pos);
 
-    if (last_line >= 0)
-      $text_area.texts[last_line].attr('class', 'unfocus');
-    $text_area.texts[cur_line].attr('class', 'focus');
+    set_focus_on_line(last_line, 'unfocus');
+    set_focus_on_line(cur_line,  'focus');
 
     if (debug) {
       $debug_area.text('Key code: ' + e.keyCode +
@@ -277,44 +289,19 @@ word_rex = {
   whitespaces: new RegExp('[\\s]{2,}', 'gm')
 };
 
+function prune_text(text, rule) {
+    if (rule['記号を無視する']) text = text.replace(word_rex.symbol, '');
+    if (rule['数字を無視する']) text = text.replace(word_rex.number, ' ');
+    if (rule['文字の大小を無視する']) text = text.toLowerCase();
+    if (rule['空白を無視する']) text = text.replace(word_rex.whitespaces, ' ');
+    return text;
+}
+
+function percent(f) {
+  return Math.floor(Math.min(f * 100, 100));
+}
+
 function grade(time_ratio) {
-  var status = read_control_panel();
-
-  var texts = []
-  texts.push(assignment);
-  texts.push($input_area.val());
-
-  var word_counts = [ {}, {} ];
-  for (var i in texts) {
-    var text = texts[i];
-    if (status['記号を無視する']) text = text.replace(word_rex.symbol, ' ');
-    if (status['数字を無視する']) text = text.replace(word_rex.number, ' ');
-    if (status['文字の大小を無視する']) text = text.toLowerCase();
-    if (status['空白を無視する']) text = text.replace(word_rex.whitespaces, ' ');
-    texts[i] = text;
-    // if (debug) alert('' + i + ': ' + text);
-  }
-
-  for (var i in texts) {
-    var words = text.split(word_rex.whitespace);
-    var wc = word_counts[i];
-    words.forEach(function (word) {
-        if (word.length > 0 && wc[word]) wc[word]++;
-        else wc[word] = 1;
-      });
-  }
-
-  var length_ratio = texts[1].length / texts[0].length;
-
-  var total_words = 0;
-  var wc_diff = {};
-  for (word in word_counts[0]) {
-    wc_diff[word] = word_counts[0][word];
-    total_words += word_counts[0][word];
-  }
-  for (word in word_counts[1])
-    wc_diff[word] = (wc_diff[word] || 0) - word_counts[1][word];
-
   var $result = $panels.result;
 
   if (time_ratio < 0.90)
@@ -323,45 +310,53 @@ function grade(time_ratio) {
         + Math.floor(time_ratio * 100)
         + '%で入力を完了したようです．速いですね！'));
 
-  var words_failed_to_input = [];
-  var n_failures = 0;
-  for (word in wc_diff) {
-    if (word.length > 0 && wc_diff[word] != 0) {
-      words_failed_to_input.push(word + ' (' + wc_diff[word] + ')');
-      n_failures += Math.abs(wc_diff[word]);
+  var conv = read_control_panel();
+  var texts = [ prune_text(assignment, conv), prune_text($input_area.val(), conv) ];
+
+  $result.append($('<p>')
+    .text('入力の長さは問題文の' +
+        percent(texts[1].length / texts[0].length) + '%です'));
+
+  var words = [ texts[0].split(word_rex.whitespace), texts[1].split(word_rex.whitespace) ];
+  words[0] = words[0].slice(0, words[1].length);
+
+  var wc = [ {}, {} ];
+  for (var i in words) {
+    words[i].forEach(function (w) {
+        if (w.length > 0) wc[i][w] = (wc[i][w] || 0) + 1;
+      });
+  }
+
+  var wc_diff = {};
+  for (w in wc[0]) wc_diff[w] = wc[0][w];
+  for (w in wc[1]) {
+    var diff = (wc_diff[w] || 0) - wc[1][w];
+    if (diff !== 0) wc_diff[w] = diff;
+    else delete wc_diff[w];
+  }
+
+  var n_failures;
+  {
+    var failures = [];
+    var n_failures1 = n_failures2 = 0;
+    for (w in wc_diff) {
+      var d = wc_diff[w];
+      if (d > 0) {
+        n_failures1 += d;
+        failures.push('-' + w);
+      } else {
+        n_failures2 -= d;
+        failures.push('+' + w);
+      }
     }
+    n_failures = Math.max(n_failures1, n_failures2);
   }
-  var miss_rate = Math.floor(Math.min(n_failures / total_words, 1) * 100);
 
+  var miss_rate = percent(n_failures / words[0].length);
   $result.append(
-    $('<p>').append('<strong>').text('スペルミス率: ')
-    .append(miss_rate));
-
-  var message = '';
-  if (miss_rate == 0) {
-    message += '機械のような正確さで入力されています．脱帽しました．';
-  } else if (n_failures < total_words * 0.1) {
-    message += 'スペルミスはほとんどありませんでした．すばらしい．';
-  } else if (n_failures < total_words * 0.2) {
-    message += 'タイピングスピードはよいのですが，スペルミスが目立ちます．スピードを少し抑えてみては？';
-  } else if (length_ratio < 0.5) {
-    message += 'タイピングスピードが足りません．がんばって．';
-  } else if (n_failures < total_words * length_ratio * 0.1) {
-    message += 'かなり正確にタイピングしています．あとはスピードですね．';
-  } else if (n_failures < total_words * length_ratio * 0.2) {
-    message += 'もう少しスペルミスが減るといいのですが．';
-  } else {
-    message += 'がんばって';
-  }
-
-  message += '\n';
-
-  if (words_failed_to_input.length > 0) {
-    message +=
-      words_failed_to_input.reduce(function (w, s) { return w + ', ' + s; });
-  }
-
-  $result.append($('<p>').text(message));
+    $('<p>').append('<strong>').text('ミス率: ').append(miss_rate));
+  $result.append(
+    $('<p>').append('<strong>').text('入力ミス: ').append(failures.join(', ')));
 
   if (competition_mode) {
     $.post('document.php',
@@ -370,6 +365,15 @@ function grade(time_ratio) {
         $your_ID.val().toUpperCase(), time_ratio, miss_rate ] },
       function (text) { if (debug) alert(text); });
   }
+  $result.append(
+    ($('<input>').attr('type', 'button').val('再挑戦')
+      .click(function () {
+          $result.children('p').remove();
+          $result.children('input').remove();
+          $input_area.val('');
+          clear_canvas();
+          read_text();
+        })));
 }
 
 // }}}
@@ -392,7 +396,7 @@ request_handler['?trial'] =
   function () {
     competition_mode = false;
     $panels.control.css({ display: '' });
-    read_text();
+    read_text('docs/pg1661.txt', 100, 5000);
   };
 // }}}
 
@@ -440,15 +444,19 @@ function read_control_panel() {
 
 // {{{ 初期化
 
+var clear_canvas;
+
 $(function () {
-    var $canvas =
+    var c =
       $('<canvas>').attr({
           width: document.width,
-          height: document.height }).appendTo($body);
-    var c = $canvas[0];
+          height: document.height }).appendTo($body)[0];
     frame = { w: c.width, h: c.height, cx: c.width / 2, cy: c.height / 2 };
 
     g_context = c.getContext('2d');
+    clear_canvas = function () {
+      g_context.clearRect(0, 0, c.width, c.height);
+    }
 
     if (debug) {
       $body.append($('<hr>')).append($('<p>').append($('<strong>').text('Debug mode')));
